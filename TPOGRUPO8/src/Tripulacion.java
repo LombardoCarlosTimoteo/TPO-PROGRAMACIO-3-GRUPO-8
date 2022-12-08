@@ -1,5 +1,8 @@
+import java.util.ArrayList;
 
 public class Tripulacion{
     String id;
     String PosActual;
+
+    ArrayList<Vuelo> ListaVuelosAsignados;
 }

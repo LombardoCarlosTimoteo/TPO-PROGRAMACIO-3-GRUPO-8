@@ -4,6 +4,7 @@ import java.io.FileReader;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
     public static ArrayList<String> readTrip(String direccion) throws Exception{
@@ -87,12 +88,94 @@ public class Main {
         array.get(a).ID=value.ID;
     }
 
-public static void ImprimirListaVuelos(ArrayList<Vuelo> Lista){
-        for (Vuelo v:Lista){
-            System.out.print(v.fechaDespegue+", ");
+    public static void ImprimirListaVuelos(ArrayList<Vuelo> Lista){
+            for (Vuelo v:Lista){
+                System.out.print(v.fechaDespegue+", ");
+            }
+        System.out.println();
+    }
+
+    public static ArrayList<String> AlgoritmoAsignaciones(ArrayList<Tripulacion> ListaTripulaciones, ArrayList<Vuelo> ListaVuelos, String PosicionActual,ArrayList<String> ListaSolucionParcial, ArrayList<String> ListaMejorSolucion,String origen,int MejorCosto){
+
+        ArrayList<Vuelo> ListaVuelosAux = new ArrayList<Vuelo>();
+        ListaVuelosAux.addAll(ListaVuelos);
+        for(Tripulacion t: ListaTripulaciones){
+            ListaVuelosAux.removeAll(t.ListaVuelosAsignados);
         }
-    System.out.println();
-}
+        if (ListaVuelosAux.size()==0){
+            for (Tripulacion t: ListaTripulaciones){
+                if(t.PosActual.equals(origen)){
+                    int costoActual = CalcularCosto(ListaSolucionParcial,ListaTripulaciones,ListaVuelos);
+                    if(costoActual<MejorCosto) MejorCosto = costoActual;
+                }
+            }
+        }
+        else {
+            ArrayList<Vuelo> ListaVuelosAdyacentes = new ArrayList<Vuelo>();
+            for (Vuelo v : ListaVuelosAux ){
+                if (v.origen.equals(PosicionActual)){
+                    ListaVuelosAdyacentes.add(v);
+                }
+            }
+            for(Vuelo v: ListaVuelosAdyacentes){
+                for(Tripulacion t: ListaTripulaciones){
+                    PosicionActual = v.destino;
+                    ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
+                    ListaNuevaSolucion.addAll(ListaSolucionParcial);
+                    //Buscamos la posicion del vuelo a analizar en la lista de vuelos ordenadas
+                    int IndexVuelo = 0;
+                    for (Vuelo vPos: ListaVuelos){
+                        if(vPos.equals(v)) IndexVuelo = ListaVuelos.indexOf(vPos);
+                    }
+                    int pos = ObtenerIndexUltimoVuelo(t.id,ListaSolucionParcial);
+                    if (pos != -1){
+                        if(ListaVuelos.get(pos).destino.equals(PosicionActual) && Duration.between(v.fechaDespegue,ListaVuelos.get(pos).fechaAterrizaje).toHours()>=2){
+                            ListaNuevaSolucion.set(IndexVuelo, t.id);
+                            ListaMejorSolucion = AlgoritmoAsignaciones( ListaTripulaciones,  ListaVuelos, PosicionActual, ListaNuevaSolucion, ListaMejorSolucion,origen,MejorCosto);
+                        }
+                    }
+                    //Posible error
+                    else{
+                        if (origen.equals(PosicionActual)){
+                            ListaNuevaSolucion.set(IndexVuelo,t.id);
+                            ListaMejorSolucion = AlgoritmoAsignaciones( ListaTripulaciones,  ListaVuelos, PosicionActual, ListaNuevaSolucion, ListaMejorSolucion,origen,MejorCosto);
+                        }
+                    }
+
+                }
+            }
+        }
+        return ListaSolucionParcial;
+    }
+
+
+    public static int CalcularCosto(ArrayList<String> ListaSolucionParcial,ArrayList<Tripulacion> ListaTripulaciones,ArrayList<Vuelo> ListaVuelos){
+        int costo =0;
+        ArrayList<Vuelo> ListaVuelosASumar= new ArrayList<Vuelo>();
+        for(Tripulacion t: ListaTripulaciones){
+            for(int i=0; i<ListaSolucionParcial.size();i++){
+                if(ListaSolucionParcial.get(i).equals(t.id)) ListaVuelosASumar.add(ListaVuelos.get(i));
+            }
+            for (int i=0; i<ListaVuelosASumar.size();i++){
+                if(i+1<ListaVuelosASumar.size()){
+                    Vuelo Vuelo1 = ListaVuelosASumar.get(i);
+                    Vuelo Vuelo2 = ListaVuelosASumar.get(i+1);
+                    costo += Duration.between(Vuelo1.fechaAterrizaje,Vuelo2.fechaDespegue).toMinutes()-120;
+                }
+            }
+            ListaVuelosASumar.clear();
+        }
+        return costo;
+    }
+
+    public static  int ObtenerIndexUltimoVuelo(String id, ArrayList<String> ListaSolucion){
+        for(int i=ListaSolucion.size()-1; i>=0;i--){
+            if (id.equals(ListaSolucion.get(i))) return i;
+        }
+        return -1;
+    }
+
+
 
     public static void main(String[] args) throws Exception {
         String rutaVuelo = "C:\\Users\\timoteo\\OneDrive\\_UADE\\2. Programacion 3\\TP\\TPO\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
@@ -109,17 +192,20 @@ public static void ImprimirListaVuelos(ArrayList<Vuelo> Lista){
             Tripulacion t = new Tripulacion();
             t.id = TripulacionesIDs.get(i);
             t.PosActual = origen;
+            t.ListaVuelosAsignados= new ArrayList<Vuelo>();
             ListaTripulaciones.add(t);
         }
 
-        ArrayList ListaSolucion = new ArrayList();
+        ArrayList<String> ListaSolucion = new ArrayList<String>();
         for (int i=0; i<ListaVuelos.size();i++){
-            ListaSolucion.add(0);
+            ListaSolucion.add("");
         }
-
-
+        int mejorCosto = Integer.MAX_VALUE;
+        ArrayList<String> solucion = new ArrayList<String>();
+        solucion=AlgoritmoAsignaciones(ListaTripulaciones,ListaVuelos,origen,ListaSolucion,ListaSolucion,origen,mejorCosto);
         // COMIENZA BACKTRACKING
-
+        ImprimirListaVuelos(ListaVuelos);
+        System.out.print(solucion);
 
     }
 
