@@ -89,64 +89,82 @@ public class Main {
     }
 
     public static void ImprimirListaVuelos(ArrayList<Vuelo> Lista){
-            for (Vuelo v:Lista){
-                System.out.print(v.fechaDespegue+", ");
-            }
+        for (Vuelo v:Lista){
+            System.out.print(v.fechaDespegue+", ");
+        }
         System.out.println();
     }
 
-    public static ArrayList<String> AlgoritmoAsignaciones(ArrayList<Tripulacion> ListaTripulaciones, ArrayList<Vuelo> ListaVuelos, String PosicionActual,ArrayList<String> ListaSolucionParcial, ArrayList<String> ListaMejorSolucion,String origen,int MejorCosto){
 
-        ArrayList<Vuelo> ListaVuelosAux = new ArrayList<Vuelo>();
-        ListaVuelosAux.addAll(ListaVuelos);
-        for(Tripulacion t: ListaTripulaciones){
-            ListaVuelosAux.removeAll(t.ListaVuelosAsignados);
-        }
-        if (ListaVuelosAux.size()==0){
-            for (Tripulacion t: ListaTripulaciones){
-                if(t.PosActual.equals(origen)){
-                    int costoActual = CalcularCosto(ListaSolucionParcial,ListaTripulaciones,ListaVuelos);
-                    if(costoActual<MejorCosto) MejorCosto = costoActual;
-                }
-            }
-        }
-        else {
-            ArrayList<Vuelo> ListaVuelosAdyacentes = new ArrayList<Vuelo>();
-            for (Vuelo v : ListaVuelosAux ){
-                if (v.origen.equals(PosicionActual)){
-                    ListaVuelosAdyacentes.add(v);
-                }
-            }
-            for(Vuelo v: ListaVuelosAdyacentes){
-                for(Tripulacion t: ListaTripulaciones){
-                    PosicionActual = v.destino;
-                    ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
-                    ListaNuevaSolucion.addAll(ListaSolucionParcial);
-                    //Buscamos la posicion del vuelo a analizar en la lista de vuelos ordenadas
-                    int IndexVuelo = 0;
-                    for (Vuelo vPos: ListaVuelos){
-                        if(vPos.equals(v)) IndexVuelo = ListaVuelos.indexOf(vPos);
-                    }
-                    int pos = ObtenerIndexUltimoVuelo(t.id,ListaSolucionParcial);
-                    if (pos != -1){
-                        if(ListaVuelos.get(pos).destino.equals(PosicionActual) && Duration.between(v.fechaDespegue,ListaVuelos.get(pos).fechaAterrizaje).toHours()>=2){
-                            ListaNuevaSolucion.set(IndexVuelo, t.id);
-                            ListaMejorSolucion = AlgoritmoAsignaciones( ListaTripulaciones,  ListaVuelos, PosicionActual, ListaNuevaSolucion, ListaMejorSolucion,origen,MejorCosto);
-                        }
-                    }
-                    //Posible error
-                    else{
-                        if (origen.equals(PosicionActual)){
-                            ListaNuevaSolucion.set(IndexVuelo,t.id);
-                            ListaMejorSolucion = AlgoritmoAsignaciones( ListaTripulaciones,  ListaVuelos, PosicionActual, ListaNuevaSolucion, ListaMejorSolucion,origen,MejorCosto);
-                        }
-                    }
+    public static boolean TripulacionesEnOrigen(ArrayList<Tripulacion> Lista, String origen, ArrayList<Vuelo> ListaVuelos, ArrayList<String> ListaSolucionParcial){
+        boolean estan = true;
 
-                }
+        for (Tripulacion t : Lista) {
+            int pos = ObtenerIndexUltimoVuelo(t.id, ListaSolucionParcial);
+            if (pos != -1) {
+                if (!origen.equals(ListaVuelos.get(pos).destino)) estan = false;
             }
         }
-        return ListaSolucionParcial;
+        return estan;
     }
+
+
+    public static ArrayList<String> AlgoritmoAsignaciones(ArrayList<Tripulacion> ListaTripulaciones, ArrayList<Vuelo> ListaVuelos,ArrayList<String> ListaSolucionParcial, ArrayList<String> ListaMejorSolucion,String origen,int MejorCosto, int Index) {
+
+        if (ListaVuelos.size() == Index) {
+            if (TripulacionesEnOrigen(ListaTripulaciones, origen, ListaVuelos, ListaSolucionParcial)){
+                int costoActual = CalcularCosto(ListaSolucionParcial, ListaTripulaciones, ListaVuelos);
+                if (costoActual < MejorCosto) MejorCosto = costoActual;
+            }
+        }
+
+
+        else {
+            //(v.origen.equals(PosicionActual))
+
+            Vuelo VueloAAnalizar = ListaVuelos.get(Index);
+            String PosActualTrip = origen;
+            boolean PrimerVuelo = true;
+
+            for (Tripulacion t : ListaTripulaciones) {
+
+                int pos = ObtenerIndexUltimoVuelo(t.id, ListaSolucionParcial);
+
+                PosActualTrip = origen;
+                PrimerVuelo = true;
+
+                if (pos != -1) {
+                    PosActualTrip = ListaVuelos.get(pos).destino;
+                    PrimerVuelo = false;
+                }
+
+                if (VueloAAnalizar.origen.equals(PosActualTrip)) {
+                    if (PrimerVuelo) {
+                        ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
+
+                        ListaNuevaSolucion.addAll(ListaSolucionParcial);
+
+                        ListaNuevaSolucion.set(Index, t.id);
+
+                        ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index++);
+
+                    } else {
+                        if (Duration.between(ListaVuelos.get(pos).fechaAterrizaje, VueloAAnalizar.fechaDespegue).toHours() >= 2) {
+                            ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
+
+                            ListaNuevaSolucion.addAll(ListaSolucionParcial);
+
+                            ListaNuevaSolucion.set(Index, t.id);
+
+                            ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index++);
+                        }
+                    }
+                }
+            }
+        }
+        return ListaMejorSolucion;
+    }
+
 
 
     public static int CalcularCosto(ArrayList<String> ListaSolucionParcial,ArrayList<Tripulacion> ListaTripulaciones,ArrayList<Vuelo> ListaVuelos){
@@ -202,8 +220,18 @@ public class Main {
         }
         int mejorCosto = Integer.MAX_VALUE;
         ArrayList<String> solucion = new ArrayList<String>();
-        solucion=AlgoritmoAsignaciones(ListaTripulaciones,ListaVuelos,origen,ListaSolucion,ListaSolucion,origen,mejorCosto);
+
+
+        int Index = 0;
+
+
+
+        solucion=AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos,ListaSolucion, ListaSolucion,origen,mejorCosto,Index);
         // COMIENZA BACKTRACKING
+
+
+
+
         ImprimirListaVuelos(ListaVuelos);
         System.out.print(solucion);
 
