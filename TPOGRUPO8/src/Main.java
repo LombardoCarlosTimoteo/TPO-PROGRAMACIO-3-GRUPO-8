@@ -195,6 +195,10 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
+
+        long startTime = System.nanoTime();
+
+
         String rutaVuelo = "C:\\Users\\Admin\\Desktop\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
         String rutaTrip = "C:\\Users\\Admin\\Desktop\\Tripulaciones.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE TRIPULACIONES
 
@@ -219,12 +223,18 @@ public class Main {
         int mejorCosto = Integer.MAX_VALUE;
         ArrayList<String> ListaMejorAsignacion = new ArrayList<String>();
 
-
         ListaMejorAsignacion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos,ListaSolucion, ListaSolucion,origen,mejorCosto,0);
 
-        System.out.print(ListaMejorAsignacion);
         ImprimirListaVuelosAsignados(ListaVuelos,ListaMejorAsignacion);
         int costo = CalcularCosto(ListaMejorAsignacion,ListaTripulaciones,ListaVuelos);
         System.out.println("\nCosto total: " + costo + " USD");
+        System.out.println();
+
+
+        long endTime = System.nanoTime();
+        System.out.println("Tiempo de Ejecucion: " + (endTime-startTime)/1e6 + " ms");
+
     }
+
+
 }
