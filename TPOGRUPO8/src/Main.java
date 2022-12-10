@@ -196,8 +196,8 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
-        String rutaVuelo = "C:\\Users\\timoteo\\OneDrive\\_UADE\\2. Programacion 3\\TP\\TPO\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
-        String rutaTrip = "C:\\Users\\timoteo\\OneDrive\\_UADE\\2. Programacion 3\\TP\\TPO\\Tripulaciones.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE TRIPULACIONES
+        String rutaVuelo = "C:\\Users\\Admin\\Desktop\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
+        String rutaTrip = "C:\\Users\\Admin\\Desktop\\Tripulaciones.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE TRIPULACIONES
 
         ArrayList<Vuelo> ListaVuelos = readVuelo(rutaVuelo);
         OrdenarListaVuelos(ListaVuelos);
