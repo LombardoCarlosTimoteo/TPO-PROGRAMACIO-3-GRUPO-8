@@ -88,9 +88,9 @@ public class Main {
         array.get(a).ID=value.ID;
     }
 
-    public static void ImprimirListaVuelos(ArrayList<Vuelo> Lista){
-        for (Vuelo v:Lista){
-            System.out.print(v.fechaDespegue+", ");
+    public static void ImprimirListaVuelosAsignados(ArrayList<Vuelo> ListaVuelos,ArrayList<String> ListaSolucion){
+        for (int i=0;i<ListaVuelos.size();i++){
+            System.out.print("\nPara el vuelo de origen "+ListaVuelos.get(i).origen+" y destino "+ListaVuelos.get(i).destino+": "+ListaSolucion.get(i));
         }
         System.out.println();
     }
@@ -114,49 +114,53 @@ public class Main {
         if (ListaVuelos.size() == Index) {
             if (TripulacionesEnOrigen(ListaTripulaciones, origen, ListaVuelos, ListaSolucionParcial)){
                 int costoActual = CalcularCosto(ListaSolucionParcial, ListaTripulaciones, ListaVuelos);
-                if (costoActual < MejorCosto) MejorCosto = costoActual;
+                if (costoActual < MejorCosto) {
+                    MejorCosto = costoActual;
+                    for(int i=0;i<ListaMejorSolucion.size();i++) {
+                        ListaMejorSolucion.set(i,ListaSolucionParcial.get(i));
+                    }
+                }
             }
         }
 
 
         else {
             //(v.origen.equals(PosicionActual))
-
-            Vuelo VueloAAnalizar = ListaVuelos.get(Index);
-            String PosActualTrip = origen;
+//
+//            String PosActualTrip = origen;
             boolean PrimerVuelo = true;
 
             for (Tripulacion t : ListaTripulaciones) {
-
+                Vuelo VueloAAnalizar = ListaVuelos.get(Index);
                 int pos = ObtenerIndexUltimoVuelo(t.id, ListaSolucionParcial);
 
-                PosActualTrip = origen;
+//                PosActualTrip = origen;
                 PrimerVuelo = true;
 
                 if (pos != -1) {
-                    PosActualTrip = ListaVuelos.get(pos).destino;
+//                    PosActualTrip = ListaVuelos.get(pos).destino;
                     PrimerVuelo = false;
                 }
 
-                if (VueloAAnalizar.origen.equals(PosActualTrip)) {
+                if (VueloAAnalizar.origen.equals(t.PosActual)) {
                     if (PrimerVuelo) {
                         ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
 
                         ListaNuevaSolucion.addAll(ListaSolucionParcial);
 
                         ListaNuevaSolucion.set(Index, t.id);
-
-                        ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index++);
+                        t.PosActual=VueloAAnalizar.destino;
+                        ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index+1);
 
                     } else {
-                        if (Duration.between(ListaVuelos.get(pos).fechaAterrizaje, VueloAAnalizar.fechaDespegue).toHours() >= 2) {
+                        if (Duration.between(ListaVuelos.get(pos).fechaAterrizaje, VueloAAnalizar.fechaDespegue).toMinutes() >= 120) {
                             ArrayList<String> ListaNuevaSolucion = new ArrayList<String>();
 
                             ListaNuevaSolucion.addAll(ListaSolucionParcial);
 
                             ListaNuevaSolucion.set(Index, t.id);
-
-                            ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index++);
+                            t.PosActual=VueloAAnalizar.destino;
+                            ListaMejorSolucion = AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos, ListaNuevaSolucion, ListaMejorSolucion, origen, MejorCosto, Index+1);
                         }
                     }
                 }
@@ -178,7 +182,7 @@ public class Main {
                 if(i+1<ListaVuelosASumar.size()){
                     Vuelo Vuelo1 = ListaVuelosASumar.get(i);
                     Vuelo Vuelo2 = ListaVuelosASumar.get(i+1);
-                    costo += Duration.between(Vuelo1.fechaAterrizaje,Vuelo2.fechaDespegue).toMinutes()-120;
+                    costo += (Duration.between(Vuelo1.fechaAterrizaje,Vuelo2.fechaDespegue).toMinutes())-120;
                 }
             }
             ListaVuelosASumar.clear();
@@ -196,8 +200,8 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
-        String rutaVuelo = "C:\\Users\\Admin\\Desktop\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
-        String rutaTrip = "C:\\Users\\Admin\\Desktop\\Tripulaciones.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE TRIPULACIONES
+        String rutaVuelo = "C:\\Users\\timoteo\\OneDrive\\_UADE\\2. Programacion 3\\TP\\TPO\\Vuelos.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE VUELOS
+        String rutaTrip = "C:\\Users\\timoteo\\OneDrive\\_UADE\\2. Programacion 3\\TP\\TPO\\Tripulaciones.csv"; //COLOCAR DIRECCION DEL ARCHIVO DE TRIPULACIONES
 
         ArrayList<Vuelo> ListaVuelos = readVuelo(rutaVuelo);
         OrdenarListaVuelos(ListaVuelos);
@@ -225,16 +229,17 @@ public class Main {
         int Index = 0;
 
 
-
-        solucion=AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos,ListaSolucion, ListaSolucion,origen,mejorCosto,Index);
         // COMIENZA BACKTRACKING
 
+        solucion=AlgoritmoAsignaciones(ListaTripulaciones, ListaVuelos,ListaSolucion, ListaSolucion,origen,mejorCosto,Index);
 
 
 
-        ImprimirListaVuelos(ListaVuelos);
+
         System.out.print(solucion);
-
+        ImprimirListaVuelosAsignados(ListaVuelos,solucion);
+        int costo = CalcularCosto( solucion,ListaTripulaciones,ListaVuelos);
+        System.out.println("\nCosto total: "+costo+" USD");
     }
 
 }
